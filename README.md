@@ -1,5 +1,7 @@
 # slides-generator
 
+**English** · [한국어](README.ko.md)
+
 A page-based workflow for building presentation decks with Claude Code slash commands.
 `materials/*.md` → **per-page plan** (`content/pages/<id>.md`) → validation → deterministic rendering → deck assembly → speaker script.
 
