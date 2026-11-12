@@ -12,5 +12,6 @@ output/
 content/manifest.json
 content/script.md
 
-# PowerPoint 임시 파일
+# PowerPoint 임시 파일 · 레포 루트에 놓인 덱 (templates/ 의 템플릿만 추적)
 ~$*.pptx
+/*.pptx

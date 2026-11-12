@@ -123,6 +123,27 @@ def _set_spc(run, spacing_pt):
     run._r.get_or_add_rPr().set("spc", str(int(spacing_pt * 100)))
 
 
+def _set_cell_borders(tcPr, L=None, R=None, T=None, B=None):
+    """
+    표 셀 테두리. 각 인자는 None(선 없음) 또는 (폭 EMU, hex 색).
+    OOXML 은 tcPr 안에서 lnL·lnR·lnT·lnB 가 채우기(noFill/solidFill)보다 **앞**에 와야 한다 —
+    뒤에 붙이면 PowerPoint 가 선을 통째로 무시하므로 항상 맨 앞에 순서대로 삽입한다.
+    """
+    for tag in ("a:lnL", "a:lnR", "a:lnT", "a:lnB"):
+        for el in tcPr.findall(qn(tag)): tcPr.remove(el)
+    for i, (tag, spec) in enumerate((("a:lnL", L), ("a:lnR", R), ("a:lnT", T), ("a:lnB", B))):
+        ln = etree.Element(qn(tag))
+        if spec is None:
+            ln.set("w", "0"); etree.SubElement(ln, qn("a:noFill"))
+        else:
+            w, hex_ = spec
+            ln.set("w", str(int(w))); ln.set("cap", "flat"); ln.set("cmpd", "sng"); ln.set("algn", "ctr")
+            sf = etree.SubElement(ln, qn("a:solidFill"))
+            etree.SubElement(sf, qn("a:srgbClr")).set("val", hex_)
+            etree.SubElement(ln, qn("a:prstDash")).set("val", "solid")
+        tcPr.insert(i, ln)
+
+
 def _set_bullet(paragraph, level, char="•"):
     """base 덱 스타일 글머리: lvl0 marL 0.25", lvl1 0.75" (indent −0.25")."""
     pPr = paragraph._p.get_or_add_pPr()
@@ -312,7 +333,7 @@ def build_chrome(slide, chapter, title, title_sub=""):
                설명성 부제("정리 결과" 같은 것)는 쓰지 않는다.
     """
     x, y, w, h = CHROME["chapter"]
-    add_text(slide, x, y, w, h, chapter, size=14, weight=700, color=STEEL, letter_spacing=0.3)
+    add_text(slide, x, y, w, h, chapter, size=14, weight=400, color=STEEL, letter_spacing=0.3)   # 회색·보통 굵기
     x, y, w, h = CHROME["title"]
     runs = [{"text": title, "size": 36, "weight": 700, "color": INK, "letter_spacing": -0.5}]
     if title_sub:
@@ -419,8 +440,11 @@ def _title_layout_chrome(slide, date=None):
     add_rect(slide, 48, 688, 1184, 1, INK, force_no_shadow=True)
 
 
-def _info_table(slide, rows, x=48, y=445, col_widths=(88, 157), row_h=32):
-    """표지 좌하단 정보표: 라벨 14pt bold | 값 14pt. 위·아래 1pt 검정선, 가운데 세로 0.5pt."""
+def _info_table(slide, rows, x=48, y=445, col_widths=(88, 200), row_h=30):
+    """
+    표지 좌하단 정보표 (과목·학과·학번·이름·이메일·발표일 등 deck.info 에 있는 행 전부).
+    라벨 14pt bold **균등 분할** | 값 14pt. 테두리는 **위·아래 1pt 검정선만** (세로선 없음).
+    """
     if not rows: return
     tbl = slide.shapes.add_table(len(rows), 2, E(x), E(y), E(sum(col_widths)), E(row_h * len(rows))).table
     for i, w in enumerate(col_widths): tbl.columns[i].width = E(w)
@@ -430,35 +454,25 @@ def _info_table(slide, rows, x=48, y=445, col_widths=(88, 157), row_h=32):
             cell = tbl.cell(r, c)
             cell.margin_left = E(8); cell.margin_right = E(8); cell.margin_top = E(2); cell.margin_bottom = E(2)
             cell.vertical_anchor = MSO_ANCHOR.MIDDLE
-            cell.fill.solid(); cell.fill.fore_color.rgb = CANVAS
+            cell.fill.background()
             tf = cell.text_frame; tf.margin_left = tf.margin_right = tf.margin_top = tf.margin_bottom = 0
-            p = tf.paragraphs[0]; p.alignment = PP_ALIGN.LEFT
+            p = tf.paragraphs[0]; p.alignment = PP_ALIGN.DISTRIBUTE if c == 0 else PP_ALIGN.LEFT
             run = p.runs[0] if p.runs else p.add_run(); run.text = txt
             _run_props(run, size=14, weight=700 if c == 0 else 400, color=INK)
-            tcPr = cell._tc.get_or_add_tcPr()
-            for tag in ("a:lnL", "a:lnR", "a:lnT", "a:lnB"):
-                for el in tcPr.findall(qn(tag)): tcPr.remove(el)
-            def _ln(tag, w, hex_=None):
-                ln = etree.SubElement(tcPr, qn(tag)); ln.set("w", str(w))
-                if hex_ is None: etree.SubElement(ln, qn("a:noFill")); return
-                ln.set("cap", "flat"); ln.set("cmpd", "sng"); ln.set("algn", "ctr")
-                sf = etree.SubElement(ln, qn("a:solidFill")); etree.SubElement(sf, qn("a:srgbClr")).set("val", hex_)
-                etree.SubElement(ln, qn("a:prstDash")).set("val", "solid")
-            _ln("a:lnL", 6350, HEX_BLACK) if c == 1 else _ln("a:lnL", 0)
-            _ln("a:lnR", 0)
-            _ln("a:lnT", 12700, HEX_BLACK) if r == 0 else _ln("a:lnT", 0)
-            _ln("a:lnB", 12700, HEX_BLACK) if r == len(rows) - 1 else _ln("a:lnB", 0)
+            _set_cell_borders(cell._tc.get_or_add_tcPr(),
+                              T=(12700, HEX_BLACK) if r == 0 else None,
+                              B=(12700, HEX_BLACK) if r == len(rows) - 1 else None)
 
 
 def _hero(slide, eyebrow, title, subtitle=""):
-    """표지/마무리 공통 텍스트박스: eyebrow 24pt / (빈 줄) / 제목 48pt bold / 부제 24pt."""
+    """표지/마무리 공통 텍스트박스: eyebrow 24pt 회색 / (빈 줄) / 제목 48pt bold / 부제 24pt."""
     _CHROME_MODE[0] = True
     try:
         tb = slide.shapes.add_textbox(E(48), E(155), E(1175), E(240))
         tf = tb.text_frame; tf.word_wrap = True
         tf.margin_left = tf.margin_right = tf.margin_top = tf.margin_bottom = 0
         p = tf.paragraphs[0]; p.line_spacing = 1.5
-        r = p.add_run(); r.text = eyebrow; _run_props(r, size=24, weight=400, color=INK)
+        r = p.add_run(); r.text = eyebrow; _run_props(r, size=24, weight=400, color=STEEL)
         p = tf.add_paragraph(); p.line_spacing = 1.5
         p = tf.add_paragraph(); p.line_spacing = 1.1
         r = p.add_run(); r.text = title; _run_props(r, size=48, weight=700, color=INK, letter_spacing=-0.5)
@@ -483,9 +497,9 @@ def build_cover(slide, deck):
 
 
 def build_closing(slide, deck):
-    """마무리: 표지와 같은 구성, 제목만 '감사합니다.' (deck.closing_title 로 변경 가능)."""
+    """마무리: 표지와 같은 구성, 제목만 'Q & A' (deck.closing_title 로 변경 가능)."""
     _title_layout_chrome(slide, deck.get("date"))
-    _hero(slide, deck.get("eyebrow") or deck.get("course", ""), deck.get("closing_title", "감사합니다."))
+    _hero(slide, deck.get("eyebrow") or deck.get("course", ""), deck.get("closing_title", "Q & A"))
     _info_table(slide, deck.get("info") or [])
     logo = deck.get("logo")
     if logo and Path(logo).exists():
@@ -562,9 +576,9 @@ def build_table(slide, x, y, col_widths, row_heights, data,
     """
     표는 12pt (헤더 12 bold / 본문 12). 소제목 16 > 본문 14 > 표 12 위계.
     data            : list[list[str]] — 헤더 행 포함
-    highlight_rows  : set[int]        — 강조 행 (3px 왼쪽 색선, 기본 rank1 blue / rank2 coral)
+    highlight_rows  : set[int]        — 강조 행 (3px 왼쪽 색선 + 연한 배경, 기본 rank1 blue / rank2 coral)
     right_cols      : set[int]        — 우측 정렬 열 (None 이면 숫자 열 자동 판별)
-    스타일: 헤더 SURFACE + 아래 1pt 검정선, 행 사이 0.5pt hairline, 세로선 없음
+    스타일: 배경 없음. 검정 1pt 선 **세 줄만** — 표 맨 위, 머리행 아래, 표 맨 아래. 행 사이·세로선 없음
     """
     highlight_rows = highlight_rows or set()
     highlight_hex  = highlight_hex  or {}
@@ -587,9 +601,10 @@ def build_table(slide, x, y, col_widths, row_heights, data,
             cell.margin_left  = E(10 if (r in highlight_rows and c == 0) else 8)
             cell.margin_right = E(8); cell.margin_top = E(4); cell.margin_bottom = E(4)
             cell.vertical_anchor = MSO_ANCHOR.MIDDLE
-            cell.fill.solid()
-            cell.fill.fore_color.rgb = (SURFACE if r == 0 else
-                                        SURFACE_SOFT if r in highlight_rows else CANVAS)
+            if r in highlight_rows:
+                cell.fill.solid(); cell.fill.fore_color.rgb = SURFACE_SOFT
+            else:
+                cell.fill.background()
             tf = cell.text_frame; tf.word_wrap = True
             tf.margin_left = tf.margin_right = tf.margin_top = tf.margin_bottom = 0
             p = tf.paragraphs[0]
@@ -606,26 +621,15 @@ def build_table(slide, x, y, col_widths, row_heights, data,
 
 
 def _table_borders(tbl, rows, cols, hl_rows, hl_hex):
-    def _line(tcPr, tag, w, hex_=None):
-        ln = etree.SubElement(tcPr, qn(tag)); ln.set("w", str(w))
-        if hex_ is None:
-            etree.SubElement(ln, qn("a:noFill")); return
-        ln.set("cap", "flat"); ln.set("cmpd", "sng"); ln.set("algn", "ctr")
-        sf = etree.SubElement(ln, qn("a:solidFill"))
-        etree.SubElement(sf, qn("a:srgbClr")).set("val", hex_)
-        etree.SubElement(ln, qn("a:prstDash")).set("val", "solid")
-
+    """검정 1pt 선 세 줄: 표 맨 위 · 머리행 아래 · 표 맨 아래. 강조 행 첫 열만 3px 색 왼쪽선."""
     for r in range(rows):
         for c in range(cols):
-            tcPr = tbl.cell(r, c)._tc.get_or_add_tcPr()
-            for tag in ("a:lnL", "a:lnR", "a:lnT", "a:lnB"):
-                for el in tcPr.findall(qn(tag)): tcPr.remove(el)
-            _line(tcPr, "a:lnT", 0); _line(tcPr, "a:lnR", 0)
-            if r in hl_rows and c == 0: _line(tcPr, "a:lnL", 3 * 9525, hl_hex.get(r, HEX_BRAND_BLUE))
-            else:                       _line(tcPr, "a:lnL", 0)
-            if r == 0:            _line(tcPr, "a:lnB", 12700, HEX_BLACK)
-            elif r == rows - 1:   _line(tcPr, "a:lnB", 12700, HEX_BLACK)
-            else:                 _line(tcPr, "a:lnB", 6350, HEX_HAIRLINE)
+            _set_cell_borders(
+                tbl.cell(r, c)._tc.get_or_add_tcPr(),
+                L=(3 * 9525, hl_hex.get(r, HEX_BRAND_BLUE)) if (r in hl_rows and c == 0) else None,
+                T=(12700, HEX_BLACK) if r == 0 else None,
+                B=(12700, HEX_BLACK) if (r == 0 or r == rows - 1) else None,
+            )
 
 
 # ── 차트 빌더 ─────────────────────────────────────────────

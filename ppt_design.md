@@ -100,7 +100,7 @@ Pretendard scales cleanly from 80px hero displays (where -2px letter-spacing cre
 | `{typography.hero-display}` | 54 | 700 | 1.10 | -1.5px | 표지 제목 (예: *Finite Difference: Parabolic Equations*) |
 | `{typography.slide-title}` | **36** | 700 | 1.10 | -0.5px | 고정 제목 슬롯 (x=48, y=100). 한 줄 유지 |
 | `{typography.title-sub}` | 18 | 500 | — | 0 | 제목 뒤에 이어 붙는 작은 부제 run (예: `30.1 THE HEAT-CONDUCTION EQUATION` + ` 열전도 방정식`) |
-| `{typography.chapter-label}` | **14** | 700 | 1.20 | 0.3px | 제목 위 `CHAPTER 30.1 열전도 방정식` 라벨, STEEL |
+| `{typography.chapter-label}` | **14** | 400 | 1.20 | 0.3px | 제목 위 `CHAPTER 01 …` 라벨, STEEL. 굵게 쓰지 않는다 |
 | `{typography.section-heading}` | **16** | 700 | 1.20 | 0 | 본문 소제목 — 왼쪽 6px 검정 바 + 굵은 글자 (`build_section`) |
 | `{typography.body}` | **14** | 400 | 1.50 | 0 | 글머리 본문. lvl0 marL 0.25", lvl1 0.75". 강조는 700 |
 | `{typography.caption}` | **12** | 700 | 1.20 | 0 | 그림/표 캡션 `그림 30.1 …`, 가운데 정렬 |
@@ -160,7 +160,7 @@ base 덱 실측. 앞 네 줄은 **template.pptx '빈 화면' 레이아웃이 그
 | 날짜 | x=1000, y=31, w=232, h=14, 우측 정렬 | Pretendard 9 / 400 / STEEL, `2026.10.27` 형식 | 레이아웃 (`new_slide(date=…)`) |
 | 위 가로선 | x=48, y=48, w=1184, h=1 | 1px INK | 레이아웃 |
 | 아래 가로선 | x=48, y=688, w=1184, h=1 | 1px INK | 레이아웃 |
-| **Chapter label** | x=48, y=77, w=1184, h=23 | 14 / 700 / STEEL — `CHAPTER 30.1 열전도 방정식` | `build_chrome` |
+| **Chapter label** | x=48, y=77, w=1184, h=23 | 14 / **400** / STEEL — 회색·보통 굵기, `CHAPTER 01 …` | `build_chrome` |
 | **Slide title** | x=48, y=100, w=1184, h=60 | 36 / 700 / INK, ls 1.10, -0.5px. **부제 run 은 기본 생략** (영문 제목의 한글 번역처럼 꼭 필요할 때만) | `build_chrome` |
 | **Section heading** | 바 x=48, w=6, h=36 · 글자 x=54 | 16 / 700 / INK, 왼쪽 검정 바 | `build_section` |
 | Page number | x=944, y=688, w=288, h=32, 우측 정렬 | 12 / 400 / STEEL — 아래 가로선 바로 아래 | `build_footer` |
@@ -314,10 +314,10 @@ The system runs predominantly flat. Elevation is reserved for sticky panels, dro
 - Background `{colors.canvas}`, text `{colors.ink}`, typography `{typography.body-sm}`, rounded `{rounded.md}`, border `1px solid {colors.hairline}`.
 
 **`data-table-header`** — Top header row.
-- Background `{colors.surface}`, text `{colors.ink}`, typography 14pt / 600 with 0.4px tracking, padding approximately 10px horizontal and 6px vertical.
+- 배경 없음, text `{colors.ink}`, 12pt / 700 with 0.3px tracking, padding 8px horizontal · 4px vertical. **표 맨 위와 머리행 아래에 1pt 검정선.**
 
 **`data-table-row`** — Body rows.
-- Background `{colors.canvas}`, text `{colors.ink}`, typography `{typography.body-sm}`, padding `{spacing.md}`, bottom border `1px solid {colors.hairline-soft}`.
+- 배경 없음, text `{colors.ink}`, 12pt / 400, 첫 열 700. **행 사이 선 없음, 세로선 없음.** 표 맨 아래에만 1pt 검정선. 즉 표 하나에 검정선은 위 · 머리행 아래 · 아래 **세 줄뿐**이다.
 
 **`data-table-row-highlight`** — Emphasized row (e.g., headline finding).
 - Background `{colors.surface-soft}`, text `{colors.ink}`, typography `{typography.body-md}` with bold scenario names and emphasized values. In the current comparison table, the manual-reference row takes a 3px coral left rule and the proposed-framework row takes a 3px blue left rule.
@@ -375,7 +375,7 @@ Because the output is **16:9 only**, there are no breakpoints. Instead, this sec
 | Page number | x=944, y=688 (우측 정렬) | No |
 
 ### Slide Type Variants
-1. **Cover slide** (`build_cover`) — '제목 슬라이드' 레이아웃 위에 날짜·위/아래 가로선을 직접 그린다. 텍스트박스 하나에 eyebrow 24pt / 빈 줄 / 제목 48pt bold / 부제 24pt. 좌하단 정보표(라벨 14pt bold | 값 14pt, 위·아래 1pt 선), 우하단 로고(PNG, 선택). 닫는 슬라이드(`build_closing`)는 제목만 "감사합니다." 로 바뀐 같은 구성.
+1. **Cover slide** (`build_cover`) — '제목 슬라이드' 레이아웃 위에 날짜·위/아래 가로선을 직접 그린다. 텍스트박스 하나에 eyebrow 24pt **회색(STEEL)** / 빈 줄 / 제목 48pt bold / 부제 24pt. 좌하단 정보표: deck.md `info:` 의 행 전부(과목 · 담당교수 · 학과 · 학번 · 이름 · 이메일 · 발표일 중 준 것), 라벨 14pt bold **균등 분할** | 값 14pt, 테두리는 **위·아래 1pt 검정선만**. 우하단 로고(PNG, 선택). 닫는 슬라이드(`build_closing`)는 제목만 **"Q & A"** 로 바뀐 같은 구성 (`closing_title` 로 변경).
 2. **Section divider** (`build_section_divider`, 선택) — 표지와 같은 레이아웃에 `CHAPTER NN` + 챕터 제목 48pt. 기본 꺼짐.
 3. **Content slide (default)** — persistent anchors + dense body region. Optional single vibrant finding card on left (8/12) + quiet white cards on right (4/12).
 4. **Full-bleed visual slide** — image fills body region (y=260→1000); chapter/title/subtitle remain in their slots overlaid with a 60% black scrim behind text if needed.

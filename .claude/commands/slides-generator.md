@@ -35,19 +35,25 @@ cp ~/.claude/ppt_design.md ./
 없으면 소스 경로를 사용자에게 확인한다.
 
 ### 3. content/deck.md 골격
-`$ARGUMENTS` 를 title 로. **발표 시간(분)·수업명·발표일**을 모르면 이 세 가지만 묻는다.
+`$ARGUMENTS` 를 title 로. 다음을 한 번에 묻는다 (모르는 것은 비워 둔다):
+**발표 시간(분) · 수업명 · 발표일 · 표지 정보표 항목(과목 · 담당교수 · 학과 · 학번 · 이름 · 이메일 등)**.
+사용자가 준 항목은 **빠짐없이** `info:` 에 넣는다 — 주면 표지에 나온다.
 ```yaml
 ---
 title: [발표 제목]
 subtitle:
-eyebrow: LAB MEETING
+eyebrow: HOMEWORK 4           # 표지 상단 회색 소제 (과제명 · 모임명 · CHAPTER NN 등)
 course: [수업명/모임명 — 모든 본문 페이지 좌상단 라벨]
 date: YYYY.MM.DD
 duration_min: 15
 author:
-info:
+info:                         # 표지 좌하단 정보표. 준 것만, 준 것은 모두. 순서대로 표시
   - 과목 | …
+  - 담당교수 | …
+  - 학과 | …
+  - 학번 | …
   - 이름 | …
+  - 이메일 | …
   - 발표일 | YYYY.MM.DD
 chapters:
 order:
