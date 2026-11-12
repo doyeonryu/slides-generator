@@ -1,0 +1,16 @@
+# 편집기
+.obsidian/
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+
+# 생성물 (페이지 미리보기 · 조립 덱 · 상태 파일)
+output/
+content/manifest.json
+content/script.md
+
+# PowerPoint 임시 파일
+~$*.pptx
