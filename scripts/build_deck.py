@@ -15,6 +15,10 @@ build_deck.py — 페이지 렌더 · 덱 조립 · 상태 조회 CLI
 import argparse, subprocess, sys, re
 from pathlib import Path
 
+for _s in (sys.stdout, sys.stderr):          # Windows 콘솔(cp949)에서도 한글·기호 출력
+    try: _s.reconfigure(encoding="utf-8", errors="replace")
+    except Exception: pass
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import lib
 from lib import *   # noqa
